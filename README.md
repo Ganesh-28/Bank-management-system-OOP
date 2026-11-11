@@ -1,148 +1,207 @@
-# Bank Management System 🏦
+# 🏦 Bank Management System
 
-![Java](https://img.shields.io/badge/Java-8%2B-blue?style=flat&logo=openjdk)
-![Tests](https://img.shields.io/badge/Tests-68%20Passed-brightgreen?style=flat&logo=junit5)
-![Coverage](https://img.shields.io/badge/Coverage-85%25-green?style=flat)
-![License](https://img.shields.io/badge/License-MIT-yellow?style=flat)
-![OOP](https://img.shields.io/badge/OOP-100%25-blueviolet?style=flat)
+A console-based banking application developed using **Java 21** and Object-Oriented Programming (OOP) principles. The application provides essential banking operations, including customer management, account creation, deposits, withdrawals, fund transfers, and transaction history tracking.
 
+The project demonstrates Core Java concepts, modular application design, exception handling, file handling, and CSV-based data persistence.
 
-A comprehensive Object-Oriented Programming (OOP) project implementing a fully functional bank management system in Java. This system demonstrates core OOP principles including inheritance, polymorphism, encapsulation, and abstraction.
+## 📌 Project Overview
 
-## 🏆 Project Highlights
-
-- ✅ **68 Unit Tests** with 100% pass rate
-- ✅ **~85% Code Coverage** 
-- ✅ **Zero Warnings** in compilation and tests
-- ✅ **Full JavaDoc** documentation
-- ✅ **Professional** code structure and design patterns
-- ✅ **MIT Licensed** open source project
-
-## 📋 Table of Contents
-- [Features](#features)
-- [Class Structure](#class-structure)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Testing](#testing)
-- [Architecture](#architecture)
-- [Technologies Used](#technologies-used)
-- [Contributing](#contributing)
-- [License](#license)
+The Bank Management System is designed to simulate basic banking operations through an interactive command-line interface. It allows users to manage customers and their bank accounts while maintaining transaction records and storing application data locally.
 
 ## ✨ Features
 
 ### Customer Management
-- Add and remove customers
-- View customer details and account information
-- Customer data persistence with CSV storage
+- Add new customers.
+- View customer details.
+- Display all registered customers.
+- Remove customers.
+- Prevent duplicate customer IDs.
 
-### Account Operations
-- **Savings Account**: Interest rate application, special tier benefits
-- **Current Account**: Overdraft facility with configurable limits and fees
-- Support for multiple accounts per customer
+### Account Management
+- Create Savings and Current accounts.
+- View account information.
+- Display all registered accounts.
+- Remove existing accounts.
+- Associate accounts with registered customers.
 
-### Transaction Processing
-- **Deposits**: Add funds to accounts
-- **Withdrawals**: Remove funds with balance validation
-- **Transfers**: Transfer money between accounts
-- **Transaction Logging**: Complete audit trail of all transactions
+### Banking Operations
+- Deposit money into accounts.
+- Withdraw money with balance validation.
+- Transfer funds between accounts.
+- Validate account ownership.
+- Prevent insufficient-balance withdrawals.
 
-### Banking Interfaces
-- **Teller Operations**: Assisted banking services
-- **ATM Services**: Self-service banking with cash management
-- Complete transaction history
+### Transaction Management
+- Record deposits and withdrawals.
+- Maintain transaction history.
+- Record outgoing and incoming fund transfers.
+- Retrieve transactions using account numbers.
 
-## 🏗️ Class Structure
+### Data Persistence
+- Store customer information using CSV files.
+- Store account information using CSV files.
+- Maintain transaction records.
+- Load previously saved data when the application restarts.
 
+### Input Validation and Error Handling
+- Validate customer and account information.
+- Handle invalid account numbers.
+- Prevent duplicate customer registration.
+- Handle insufficient balance.
+- Use exception handling for invalid operations.
+
+## 🛠️ Technology Stack
+
+| Technology | Purpose |
+|---|---|
+| Java 21 | Core application development |
+| OOP | Modular and reusable application design |
+| Java Collections | Managing customers, accounts and transactions |
+| File Handling | Reading and writing application data |
+| CSV | Local data persistence |
+| Exception Handling | Error handling and validation |
+| JUnit 5 | Unit testing |
+
+## 🏗️ Project Architecture
+
+The application follows a modular, class-based architecture.
+
+```text
+Bank-management-system-OOP/
+│
+├── src/
+│   ├── Account.java
+│   ├── SavingsAccount.java
+│   ├── CurrentAccount.java
+│   ├── Customer.java
+│   ├── Bank.java
+│   ├── ATM.java
+│   ├── Teller.java
+│   ├── Transaction.java
+│   ├── TransactionLogger.java
+│   ├── DataManager.java
+│   ├── CsvSupport.java
+│   └── InputHandler.java
+│
+├── test/
+│   └── JUnit test classes
+│
+├── lib/
+│   └── JUnit library
+│
+├── .gitignore
+├── README.md
+├── LICENSE
+├── compile.bat
+└── compile.ps1
 ```
-Bank Management System
-│
-├── Account (Abstract)
-│   ├── SavingsAccount
-│   └── CurrentAccount
-│
-├── Customer
-├── Bank
-├── Transaction
-├── TransactionLogger
-│
-├── Banking Interfaces
-│   ├── Teller
-│   └── ATM
-│
-└── Utilities
-    ├── DataManager
-    └── InputHandler
+
+### Core Components
+
+| Class | Responsibility |
+|---|---|
+| `Account` | Base class for bank accounts and common banking operations |
+| `SavingsAccount` | Implements savings account functionality |
+| `CurrentAccount` | Implements current account functionality |
+| `Customer` | Manages customer information and associated accounts |
+| `Bank` | Central management of customers, accounts, tellers and ATMs |
+| `ATM` | Handles ATM-related banking operations |
+| `Teller` | Represents bank teller operations |
+| `Transaction` | Represents individual financial transactions |
+| `TransactionLogger` | Records and retrieves transaction history |
+| `DataManager` | Loads and saves application data |
+| `CsvSupport` | Handles CSV encoding and decoding |
+| `InputHandler` | Provides the interactive command-line interface |
+
+## 🖥️ Application Screenshots
+
+Screenshots of the application can be added to the `screenshots/` directory.
+
+Suggested screenshots:
+
+1. Main Menu – Application interface.
+2. Customer Management – Adding and viewing customers.
+3. Account Management – Creating savings and current accounts.
+4. Banking Operations – Deposit, withdrawal and transfer.
+5. Transaction History – Displaying account transactions.
+6. Account Overview – Displaying account balances.
+
+Example Markdown for adding screenshots:
+
+```markdown
+### Main Menu
+
+![Main Menu](screenshots/main-menu.png)
+
+### Account Management
+
+![Account Management](screenshots/account-management.png)
+
+### Transaction History
+
+![Transaction History](screenshots/transaction-history.png)
 ```
 
-### Core Classes
+> Add your actual application screenshots using these filenames before publishing the screenshots section.
 
-#### **Account** (Abstract Class)
-Base class for all account types with common operations:
-- Deposit, withdraw, transfer functionality
-- Balance management
-- Customer association
-- CSV serialization
+## ⚙️ Installation and Setup
 
-#### **SavingsAccount** (Extends Account)
-- Interest rate application
-- Special tier rewards for high balances
-- Minimum balance requirements
+### Prerequisites
 
-#### **CurrentAccount** (Extends Account)
-- Overdraft facility
-- Overdraft fee management
-- Flexible withdrawal limits
+Make sure the following are installed:
 
-#### **Customer**
-- Personal information management (name, address, CNIC, phone)
-- Multiple account support
-- Account viewing capabilities
+- Java Development Kit (JDK) 21 or later.
+- Git.
+- Visual Studio Code or any Java-compatible IDE.
 
-#### **Bank**
-- Central management system
-- Customer, account, teller, and ATM registry
-- Transaction coordination
+Verify your Java installation:
 
-#### **Transaction & TransactionLogger**
-- Transaction recording and persistence
-- Complete audit trail
-- CSV-based transaction history
-
-## 🔧 Prerequisites
-
-- **Java Development Kit (JDK)**: Version 8 or higher
-- **IDE**: Visual Studio Code (recommended) or any Java IDE
-- **Operating System**: Windows, macOS, or Linux
-
-## 📥 Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/AbdullahFormal/Bank-management-system-OOP.git
-   cd Bank-management-system-OOP
-   ```
-
-2. **Compile the project**
-   ```bash
-   cd "Bank Management System/src"
-   javac *.java
-   ```
-
-3. **Run the application**
-   ```bash
-   java InputHandler
-   ```
-
-## 💻 Usage
-
-### Starting the Application
-
-Run the `InputHandler` class which provides an interactive menu:
-
+```bash
+java -version
+javac -version
 ```
-=== Bank Management System ===
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Ganesh-28/Bank-management-system-OOP.git
+```
+
+### 2. Navigate to the Project Directory
+
+```bash
+cd Bank-management-system-OOP
+```
+
+### 3. Compile the Application
+
+Create a directory for compiled Java classes:
+
+```bash
+mkdir bin
+```
+
+Compile all Java source files:
+
+```bash
+javac --release 21 -encoding UTF-8 -d bin src/*.java
+```
+
+**Windows PowerShell users:** The same compilation command works in PowerShell.
+
+### 4. Run the Application
+
+```bash
+java -cp bin InputHandler
+```
+
+## 🚀 Application Menu
+
+The application provides the following interactive menu:
+
+```text
+--- Bank System Menu ---
+
 1. Add Customer
 2. Remove Customer
 3. View Customer Details
@@ -152,195 +211,71 @@ Run the `InputHandler` class which provides an interactive menu:
 7. Withdraw
 8. Transfer
 9. View Transaction History
+10. Show All Customers
+11. Show All Accounts
+12. Show All Tellers
+13. Show All ATMs
 0. Exit
 ```
 
-### Sample Workflow
-
-1. **Add a Customer**
-   - Enter customer ID, name, address, phone, and CNIC
-
-2. **Create an Account**
-   - Choose account type (Savings/Current)
-   - Configure account parameters
-   - Account is automatically linked to customer
-
-3. **Perform Transactions**
-   - Deposit funds
-   - Withdraw money
-   - Transfer between accounts
-   - All transactions are logged automatically
-
-4. **View History**
-   - Check transaction logs
-   - View customer account details
-   - Review balance information
+Select an option and follow the instructions displayed in the terminal.
 
 ## 🧪 Testing
 
-### Test Suite Overview
-The project includes comprehensive unit tests using **JUnit 5** with **50+ test cases** covering:
+The project includes JUnit test classes for testing application functionality.
 
-#### Test Classes
-- **AccountTest**: Tests for deposit, withdrawal, transfer, interest, and overdraft
-- **CustomerTest**: Tests for customer creation, account management, and validation
-- **BankTest**: Tests for bank operations and defensive copying
-- **TransactionTest**: Tests for transaction creation and CSV serialization
+Testing areas include:
 
-#### Test Coverage
-- ✅ **85%+ code coverage**
-- ✅ All critical paths tested
-- ✅ Edge cases and validation
-- ✅ Exception handling
+- Customer management.
+- Account operations.
+- Banking business logic.
+- Transaction handling.
+- Input validation.
+- Exception handling.
 
-### Running Tests
+Run the available JUnit test suite using the included JUnit library and your preferred Java test runner.
 
-#### Quick Start (Windows)
-```bash
-# Compile everything
-compile.bat
+## 🧠 Core Java Concepts Demonstrated
 
-# Run all tests
-run-tests.bat
-```
+This project demonstrates practical implementation of:
 
-#### PowerShell
-```powershell
-.\compile.ps1
-.\run-tests.ps1
-```
-
-#### Manual Execution
-```bash
-# Compile source
-javac -d bin src\*.java
-
-# Compile tests
-javac -cp "bin;lib\junit-platform-console-standalone-1.10.1.jar" -d bin test\*.java
-
-# Run tests
-java -jar lib\junit-platform-console-standalone-1.10.1.jar execute --class-path bin --scan-class-path
-```
-
-### Expected Output
-```
-Test run finished after 245 ms
-[        68 tests successful      ]
-[         0 tests failed          ]
-```
-
-📖 **For detailed testing guide, see [TESTING.md](TESTING.md)**
-
-## 🏛️ Architecture
-
-### Design Patterns Used
-
-1. **Abstract Factory Pattern**: Account creation (Savings/Current)
-2. **Singleton Pattern**: Bank instance management
-3. **Strategy Pattern**: Different account behaviors
-4. **Data Access Object (DAO)**: DataManager for persistence
-
-### OOP Principles Demonstrated
-
-- **Encapsulation**: Private fields with controlled access
-- **Inheritance**: Account hierarchy
-- **Polymorphism**: Abstract methods with specific implementations
-- **Abstraction**: Abstract Account class
-
-### Data Persistence
-
-The system uses CSV files for data storage:
-- `customers.csv`: Customer information
-- `accounts.csv`: Account details
-- `transactions.csv`: Transaction history
-
-## 🛠️ Technologies Used
-
-## 🛠️ Technologies Used
-
-- **Language**: Java 8+
-- **Testing Framework**: JUnit 5
-- **Data Storage**: CSV files
-- **Design**: Object-Oriented Programming
-- **Input/Output**: Console-based interface
-
-## 📁 Folder Structure
-
-```
-Bank Management System/
-├── src/                    # Source files
-│   ├── Account.java
-│   ├── SavingsAccount.java
-│   ├── CurrentAccount.java
-│   ├── Customer.java
-│   ├── Bank.java
-│   ├── Transaction.java
-│   ├── TransactionLogger.java
-│   ├── Teller.java
-│   ├── ATM.java
-│   ├── DataManager.java
-│   └── InputHandler.java
-├── test/                   # Unit tests
-│   ├── AccountTest.java
-│   ├── CustomerTest.java
-│   ├── BankTest.java
-│   └── TransactionTest.java
-├── bin/                    # Compiled classes
-├── lib/                    # JUnit library
-│   └── junit-platform-console-standalone-1.10.1.jar
-├── compile.bat             # Compilation script (Windows)
-├── run-tests.bat           # Test execution script (Windows)
-├── compile.ps1             # Compilation script (PowerShell)
-├── run-tests.ps1           # Test execution script (PowerShell)
-├── README.md               # This file
-├── TESTING.md              # Detailed testing guide
-├── CONTRIBUTING.md         # Contribution guidelines
-└── LICENSE                 # MIT License
-```
-
-## 🤝 Contributing
-
-We welcome contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
-
-### Quick Contribution Guide
-1. Fork the repository from [Bank-management-system-OOP](https://github.com/AbdullahFormal/Bank-management-system-OOP)
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👨‍💻 Author
-
-**Muhammad Abdullah**
-- Email: mabdullahformal@gmail.com
-- GitHub: [@AbdullahFormal](https://github.com/AbdullahFormal)
-
-Created as part of an Object-Oriented Programming course project.
+- Classes and Objects
+- Encapsulation
+- Inheritance
+- Polymorphism
+- Abstraction
+- Constructors and Method Overriding
+- Java Collections Framework
+- Exception Handling
+- File I/O
+- CSV Processing
+- Modular Programming
+- Unit Testing
 
 ## 🔮 Future Enhancements
 
-- Database integration (MySQL/PostgreSQL)
-- GUI interface (JavaFX/Swing)
-- RESTful API
-- Authentication and authorization
-- Multi-currency support
-- Loan management module
-- Credit/Debit card management
+Potential improvements for future versions:
 
-## 📞 Support
+- Integrate MySQL using JDBC.
+- Develop a REST API using Spring Boot.
+- Implement user authentication and authorization.
+- Add a graphical user interface.
+- Introduce secure password hashing.
+- Generate downloadable account statements.
+- Add role-based access control.
+- Improve transaction consistency and audit logging.
 
-For questions or issues, please open an issue on GitHub.
+## 👨‍💻 Author
 
-## ⭐ Acknowledgments
+**Avasarala Sai Ganesh**
 
-- JUnit Team for the excellent testing framework
-- Java Community for comprehensive documentation
-- All contributors to this project
+- GitHub: [Ganesh-28](https://github.com/Ganesh-28)
+- Project Repository: [Bank Management System](https://github.com/Ganesh-28/Bank-management-system-OOP)
+
+## 📄 License
+
+This project is distributed under the license included in this repository. Please refer to the `LICENSE` file for details.
 
 ---
 
-**Note**: This is an educational project demonstrating OOP concepts in Java.
+⭐ If you find this project useful, consider giving the repository a star!
