@@ -1,60 +1,54 @@
-import java.io.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Handles logging and retrieval of banking transactions.
- * Persists transactions to CSV file for audit trail and history tracking.
- * 
- * @author Bank Management System
- * @version 1.0
- */
-public class TransactionLogger {
+/** Append-only CSV transaction log. */
+public final class TransactionLogger {
+    private static final Path FILE = Path.of("transactions.csv");
 
-    private static final String FILE_NAME = "transactions.csv";
+    private TransactionLogger() {}
 
-    /**
-     * Logs a transaction to the persistent storage file.
-     * 
-     * @param transaction the transaction to log (cannot be null)
-     * @throws IllegalArgumentException if transaction is null
-     */
-    public static void log(Transaction transaction) {
-        if (transaction == null) {
-            throw new IllegalArgumentException("Transaction cannot be null.");
-        }
-        writeTransactionToFile(transaction);
-    }
-
-    /**
-     * Retrieves all logged transactions from the storage file.
-     * 
-     * @return List of all transactions
-     */
-    public static List<Transaction> getTransactions() {
-        return readTransactionsFromFile();
-    }
-
-    private static void writeTransactionToFile(Transaction transaction) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME, true))) {
-            writer.write(transaction.toCSV());
-            writer.newLine();
+    public static synchronized void log(Transaction transaction) {
+        if (transaction == null) throw new IllegalArgumentException("Transaction cannot be null.");
+        try {
+            Files.writeString(FILE, transaction.toCSV() + System.lineSeparator(),
+                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException e) {
-            System.err.println("Error writing transaction to file: " + e.getMessage());
+            throw new IllegalStateException("Unable to write transaction log: " + e.getMessage(), e);
         }
     }
 
-    private static List<Transaction> readTransactionsFromFile() {
+    public static synchronized List<Transaction> getTransactions() {
         List<Transaction> transactions = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
+        if (!Files.exists(FILE)) return transactions;
+        try (var reader = Files.newBufferedReader(FILE)) {
             String line;
+            int lineNumber = 0;
             while ((line = reader.readLine()) != null) {
-                Transaction transaction = Transaction.fromCSV(line);
-                transactions.add(transaction);
+                lineNumber++;
+                if (line.isBlank()) continue;
+                try {
+                    transactions.add(Transaction.fromCSV(line));
+                } catch (RuntimeException e) {
+                    System.err.println("Skipping invalid transaction at line " + lineNumber
+                            + ": " + e.getMessage());
+                }
             }
         } catch (IOException e) {
-            System.err.println("Error reading transactions from file: " + e.getMessage());
+            throw new IllegalStateException("Unable to read transaction log: " + e.getMessage(), e);
         }
-        return transactions;
+        return List.copyOf(transactions);
+    }
+
+    public static synchronized List<Transaction> getTransactionsForAccount(String accountNumber) {
+        if (accountNumber == null || accountNumber.isBlank()) {
+            throw new IllegalArgumentException("Account number cannot be empty.");
+        }
+        return getTransactions().stream()
+                .filter(tx -> tx.getAccountNumber().equals(accountNumber))
+                .toList();
     }
 }

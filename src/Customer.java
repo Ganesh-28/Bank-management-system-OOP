@@ -1,129 +1,86 @@
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
-/**
- * Represents a bank customer with personal information and associated accounts.
- * Each customer can have multiple accounts and is identified by a unique customer ID.
- * 
- * @author Bank Management System
- * @version 1.0
- */
+/** A bank customer and the accounts owned by that customer. */
 public class Customer {
-    private String name;
-    private String address;
-    private String customerID;
-    private String phoneNumber;
-    private String CNIC;
-    private List<Account> accounts;
+    private final String name;
+    private final String address;
+    private final String customerID;
+    private final String phoneNumber;
+    private final String CNIC;
+    private final List<Account> accounts = new ArrayList<>();
 
-    public Customer(String customerID, String name, String address, String phoneNumber, String CNIC) {
-        
-        validateInput(customerID, "Customer ID cannot be empty.");
-        validateInput(name, "Name cannot be empty.");
-        validateInput(address, "Address cannot be empty.");
-        validateInput(phoneNumber, "Phone number cannot be empty.");
-        validateInput(CNIC, "CNIC cannot be empty.");
-        
-        this.customerID = customerID;
-        this.name = name;
-        this.address = address;
-        this.phoneNumber = phoneNumber;
-        this.CNIC = CNIC;
-        this.accounts = new ArrayList<>();
+    public Customer(String customerID, String name, String address,
+                    String phoneNumber, String CNIC) {
+        this.customerID = requireText(customerID, "Customer ID cannot be empty.");
+        this.name = requireText(name, "Name cannot be empty.");
+        this.address = requireText(address, "Address cannot be empty.");
+        this.phoneNumber = requireText(phoneNumber, "Phone number cannot be empty.");
+        this.CNIC = requireText(CNIC, "CNIC cannot be empty.");
     }
 
-    public Customer(String customerID, String name, String address, String phoneNumber, String CNIC, List<Account> accounts) {
-        
-        validateInput(customerID, "Customer ID cannot be empty.");
-        validateInput(name, "Name cannot be empty.");
-        validateInput(address, "Address cannot be empty.");
-        validateInput(phoneNumber, "Phone number cannot be empty.");
-        validateInput(CNIC, "CNIC cannot be empty.");
-        
-        this.customerID = customerID;
-        this.name = name;
-        this.address = address;
-        this.phoneNumber = phoneNumber;
-        this.CNIC = CNIC;
-        this.accounts = accounts;
-    }
-
-    public String getCustomerID() {
-        return customerID;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Adds an account to this customer's account list.
-     * 
-     * @param account the account to add (cannot be null)
-     * @throws IllegalArgumentException if account is null
-     */
-    public void addAccount(Account account) {
-        if (account == null) {
-            throw new IllegalArgumentException("Account cannot be null.");
+    /** Compatibility constructor; the supplied list is defensively copied. */
+    public Customer(String customerID, String name, String address,
+                    String phoneNumber, String CNIC, List<Account> accounts) {
+        this(customerID, name, address, phoneNumber, CNIC);
+        if (accounts != null) {
+            accounts.forEach(this::addAccount);
         }
-        accounts.add(account);
+    }
+
+    public String getCustomerID() { return customerID; }
+    public String getName() { return name; }
+    public String getAddress() { return address; }
+    public String getPhoneNumber() { return phoneNumber; }
+    public String getCNIC() { return CNIC; }
+
+    public void addAccount(Account account) {
+        Objects.requireNonNull(account, "Account cannot be null.");
+        if (!customerID.equals(account.getCustomer().getCustomerID())) {
+            throw new IllegalArgumentException("Account belongs to a different customer.");
+        }
+        boolean alreadyAdded = accounts.stream()
+                .anyMatch(existing -> existing.getAccountNumber().equals(account.getAccountNumber()));
+        if (!alreadyAdded) accounts.add(account);
     }
 
     public void removeAccount(Account account) {
-        if (account == null) {
-            throw new IllegalArgumentException("Account cannot be null.");
-        }
+        Objects.requireNonNull(account, "Account cannot be null.");
         accounts.remove(account);
     }
 
-    /**
-     * Returns a copy of this customer's accounts list.
-     * 
-     * @return new ArrayList containing all customer accounts
-     */
     public List<Account> viewAccounts() {
-        return new ArrayList<>(accounts); // Return a copy to prevent modification
-    }
-
-    private void validateInput(String input, String errorMessage) {
-        if (input == null || input.trim().isEmpty()) {
-            throw new IllegalArgumentException(errorMessage);
-        }
+        return List.copyOf(accounts);
     }
 
     public String toCSV() {
-        // Convert list of account IDs to a semicolon-separated string
-        String accountIDs = accounts.stream()
-                                    .map(Account::getAccountNumber)
-                                    .collect(Collectors.joining(";"));
-        return String.join(",", customerID, name, address, phoneNumber, CNIC, accountIDs);
+        return CsvSupport.encode(customerID, name, address, phoneNumber, CNIC,
+                accounts.stream().map(Account::getAccountNumber)
+                        .collect(java.util.stream.Collectors.joining(";")));
     }
+
     public static Customer fromCSV(String csv) {
-        String[] values = csv.split(",", -1); // Use -1 to handle trailing empty values
-        if (values.length < 6) {
+        List<String> values = CsvSupport.decode(csv);
+        if (values.size() < 5) {
             throw new IllegalArgumentException("Invalid CSV data for Customer.");
         }
-
-        String customerID = values[0];
-        String name = values[1];
-        String address = values[2];
-        String phoneNumber = values[3];
-        String CNIC = values[4];
-
-        List<Account> accounts = new ArrayList<Account>();
-        return new Customer(customerID, name, address, phoneNumber, CNIC, accounts);
+        return new Customer(values.get(0), values.get(1), values.get(2),
+                values.get(3), values.get(4));
     }
 
-    //override default toString to get an understandable output
+    private static String requireText(String value, String message) {
+        if (value == null || value.isBlank()) throw new IllegalArgumentException(message);
+        return value.trim();
+    }
+
     @Override
     public String toString() {
-        return "Customer ID: " + customerID + "\n" +
-            "Name: " + name + "\n" +
-            "Address: " + address + "\n" +
-            "Phone Number: " + phoneNumber + "\n" +
-            "CNIC: " + CNIC + "\n" +
-            "Accounts: " + accounts.size();
+        return "Customer ID: " + customerID + System.lineSeparator()
+                + "Name: " + name + System.lineSeparator()
+                + "Address: " + address + System.lineSeparator()
+                + "Phone Number: " + phoneNumber + System.lineSeparator()
+                + "CNIC: " + CNIC + System.lineSeparator()
+                + "Accounts: " + accounts.size();
     }
 }

@@ -1,168 +1,276 @@
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * Represents a bank with customers, accounts, tellers, and ATMs.
- * Serves as the central management system for all banking operations.
- * 
- * @author Bank Management System
- * @version 1.0
+ * Central registry and service layer for the bank.
+ * Manages customers, accounts, tellers, ATMs and transactions.
  */
 public class Bank {
 
-    private String name;
-    private List<Customer> customers;
-    private List<Teller> tellers;
-    private List<Account> accounts;
-    private List<ATM> atms;
+    private final String name;
+
+    private final List<Customer> customers = new ArrayList<>();
+    private final List<Teller> tellers = new ArrayList<>();
+    private final List<Account> accounts = new ArrayList<>();
+    private final List<ATM> atms = new ArrayList<>();
 
     public Bank(String name) {
-        this.name = name;
-        this.customers = new ArrayList<>();
-        this.tellers = new ArrayList<>();
-        this.accounts = new ArrayList<>();
-        this.atms = new ArrayList<>();
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Bank name cannot be empty.");
+        }
+
+        this.name = name.trim();
     }
 
-    /**
-     * Adds a customer to the bank's customer registry.
-     * 
-     * @param customer the customer to add (cannot be null)
-     * @throws IllegalArgumentException if customer is null
-     */
+    // ---------------- CUSTOMER MANAGEMENT ----------------
+
     public void addCustomer(Customer customer) {
-        if (customer == null) {
-            throw new IllegalArgumentException("Customer cannot be null.");
+        Objects.requireNonNull(customer, "Customer cannot be null.");
+
+        if (findCustomer(customer.getCustomerID()) != null) {
+            throw new IllegalArgumentException(
+                    "Customer ID already exists: " + customer.getCustomerID()
+            );
         }
+
         customers.add(customer);
     }
 
     public void removeCustomer(Customer customer) {
-        if (customer == null) {
-            throw new IllegalArgumentException("Customer cannot be null.");
+        Objects.requireNonNull(customer, "Customer cannot be null.");
+
+        if (!customer.viewAccounts().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Remove the customer's accounts before removing the customer."
+            );
         }
+
         customers.remove(customer);
     }
 
     /**
-     * Retrieves customer details by customer ID.
-     * 
-     * @param customerID the unique identifier of the customer
-     * @return Customer object with matching ID
-     * @throws IllegalArgumentException if customer with given ID is not found
+     * Returns null when no customer matches.
      */
     public Customer getCustomerDetails(String customerID) {
-        for (Customer customer : customers) {
-            if (customer.getCustomerID().equals(customerID)) {
-                return customer;
-            }
+        if (customerID == null || customerID.isBlank()) {
+            return null;
         }
-        throw new IllegalArgumentException("Customer with ID " + customerID + " not found.");
+
+        return findCustomer(customerID.trim());
     }
 
-    public List<Customer> getCustomers(){
-        return new ArrayList<>(customers);
+    private Customer findCustomer(String id) {
+        return customers.stream()
+                .filter(customer -> customer.getCustomerID().equals(id))
+                .findFirst()
+                .orElse(null);
     }
+
+    public List<Customer> getCustomers() {
+        return List.copyOf(customers);
+    }
+
+    // ---------------- TELLER MANAGEMENT ----------------
 
     public void addTeller(Teller teller) {
-        if (teller == null) {
-            throw new IllegalArgumentException("Teller cannot be null.");
+        Objects.requireNonNull(teller, "Teller cannot be null.");
+
+        if (tellers.stream().anyMatch(
+                existing -> existing.getTellerID().equals(teller.getTellerID())
+        )) {
+            throw new IllegalArgumentException("Teller ID already exists.");
         }
+
         tellers.add(teller);
     }
 
     public void removeTeller(Teller teller) {
-        if (teller == null) {
-            throw new IllegalArgumentException("Teller cannot be null.");
-        }
+        Objects.requireNonNull(teller);
         tellers.remove(teller);
     }
 
     public List<Teller> getTellers() {
-        return new ArrayList<>(tellers);
+        return List.copyOf(tellers);
     }
 
+    // ---------------- ACCOUNT MANAGEMENT ----------------
+
     public void addAccount(Account account) {
-        if (account == null) {
-            throw new IllegalArgumentException("Account cannot be null.");
+        Objects.requireNonNull(account, "Account cannot be null.");
+
+        if (accounts.stream().anyMatch(
+                existing -> existing.getAccountNumber()
+                        .equals(account.getAccountNumber())
+        )) {
+            throw new IllegalArgumentException("Account number already exists.");
         }
+
+        if (findCustomer(account.getCustomer().getCustomerID()) == null) {
+            throw new IllegalArgumentException(
+                    "Account owner must be registered with this bank."
+            );
+        }
+
         accounts.add(account);
+        account.getCustomer().addAccount(account);
     }
 
     public void removeAccount(Account account) {
-        if (account == null) {
-            throw new IllegalArgumentException("Account cannot be null.");
-        }
+        Objects.requireNonNull(account, "Account cannot be null.");
+
         accounts.remove(account);
+        account.getCustomer().removeAccount(account);
     }
 
     public List<Account> getAccounts() {
-        return new ArrayList<>(accounts);
+        return List.copyOf(accounts);
     }
 
+    // ---------------- ATM MANAGEMENT ----------------
+
     public void addATM(ATM atm) {
-        if (atm == null) {
-            throw new IllegalArgumentException("ATM cannot be null.");
-        }
+        Objects.requireNonNull(atm, "ATM cannot be null.");
         atms.add(atm);
     }
 
     public void removeATM(ATM atm) {
-        if (atm == null) {
-            throw new IllegalArgumentException("ATM cannot be null.");
-        }
+        Objects.requireNonNull(atm, "ATM cannot be null.");
         atms.remove(atm);
     }
 
     public List<ATM> getATMs() {
-        return new ArrayList<>(atms);
+        return List.copyOf(atms);
     }
+
+    // ---------------- DEPOSIT ----------------
 
     public void deposit(Customer customer, Account account, double amount) {
-        if (customer == null || account == null) {
-            throw new IllegalArgumentException("Customer or Account cannot be null.");
-        }
+        validateOwnership(customer, account);
+
         account.deposit(amount);
-        // Log transaction
-        Transaction transaction = new Transaction(customer.getCustomerID(), account.getAccountNumber(), "Deposit", amount);
-        TransactionLogger.log(transaction);
+
+        TransactionLogger.log(
+                new Transaction(
+                        customer.getCustomerID(),
+                        account.getAccountNumber(),
+                        "Deposit",
+                        amount
+                )
+        );
     }
+
+    // ---------------- WITHDRAWAL ----------------
 
     public void withdraw(Customer customer, Account account, double amount) {
-        if (customer == null || account == null) {
-            throw new IllegalArgumentException("Customer or Account cannot be null.");
+        validateOwnership(customer, account);
+
+        account.withdraw(amount);
+
+        TransactionLogger.log(
+                new Transaction(
+                        customer.getCustomerID(),
+                        account.getAccountNumber(),
+                        "Withdrawal",
+                        amount
+                )
+        );
+    }
+
+    // ---------------- MONEY TRANSFER ----------------
+
+    public void transfer(
+            Customer customer,
+            Account source,
+            Account target,
+            double amount
+    ) {
+
+        // Validate the sender's ownership.
+        validateOwnership(customer, source);
+
+        // Validate the destination account.
+        if (target == null || !accounts.contains(target)) {
+            throw new IllegalArgumentException(
+                    "Target account is not registered."
+            );
         }
-        boolean success = account.withdraw(amount);
-        if (success) {
-            // Log transaction
-            Transaction transaction = new Transaction(customer.getCustomerID(), account.getAccountNumber(), "Withdrawal", amount);
-            TransactionLogger.log(transaction);
+
+        // Prevent transferring money to the same account.
+        if (source.equals(target)) {
+            throw new IllegalArgumentException(
+                    "Source and target accounts cannot be the same."
+            );
+        }
+
+        // Perform the actual balance transfer.
+        source.transfer(target, amount);
+
+        // Record the outgoing transaction for the sender.
+        TransactionLogger.log(
+                new Transaction(
+                        source.getCustomer().getCustomerID(),
+                        source.getAccountNumber(),
+                        "Transfer (Sent)",
+                        amount
+                )
+        );
+
+        // Record the incoming transaction for the receiver.
+        TransactionLogger.log(
+                new Transaction(
+                        target.getCustomer().getCustomerID(),
+                        target.getAccountNumber(),
+                        "Transfer (Received)",
+                        amount
+                )
+        );
+    }
+
+    // ---------------- VALIDATION ----------------
+
+    private void validateOwnership(Customer customer, Account account) {
+
+        if (customer == null || account == null) {
+            throw new IllegalArgumentException(
+                    "Customer and account are required."
+            );
+        }
+
+        if (!accounts.contains(account)) {
+            throw new IllegalArgumentException(
+                    "Account is not registered with this bank."
+            );
+        }
+
+        if (!account.getCustomer().getCustomerID()
+                .equals(customer.getCustomerID())) {
+
+            throw new IllegalArgumentException(
+                    "Account does not belong to the specified customer."
+            );
         }
     }
 
-    public void transfer(Customer customer, Account sourceAccount, Account targetAccount, double amount) {
-        if (customer == null || sourceAccount == null || targetAccount == null) {
-            throw new IllegalArgumentException("Customer or Account cannot be null.");
-        }
-        sourceAccount.transfer(targetAccount, amount);
-        // Log transaction
-        Transaction transaction = new Transaction(customer.getCustomerID(), sourceAccount.getAccountNumber(), "Transfer", amount);
-        TransactionLogger.log(transaction);
-    }
+    // ---------------- TRANSACTION HISTORY ----------------
 
     public List<Transaction> getTransactionHistory(Account account) {
-        if (account == null) {
-            throw new IllegalArgumentException("Account cannot be null.");
-        }
-        return TransactionLogger.getTransactions();
+        Objects.requireNonNull(account, "Account cannot be null.");
+
+        return TransactionLogger.getTransactionsForAccount(
+                account.getAccountNumber()
+        );
     }
+
+    // ---------------- BANK DETAILS ----------------
 
     @Override
     public String toString() {
-        return "Bank Name: " + name + "\n" +
-            "Customers: " + customers.size() + "\n" +
-            "Tellers: " + tellers.size() + "\n" +
-            "Accounts: " + accounts.size() + "\n" +
-            "ATMs: " + atms.size();
+        return "Bank Name: " + name + System.lineSeparator()
+                + "Customers: " + customers.size() + System.lineSeparator()
+                + "Tellers: " + tellers.size() + System.lineSeparator()
+                + "Accounts: " + accounts.size() + System.lineSeparator()
+                + "ATMs: " + atms.size();
     }
 }

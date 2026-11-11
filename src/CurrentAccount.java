@@ -1,100 +1,85 @@
-/**
- * Represents a current account with overdraft facility.
- * Extends Account class with overdraft limit and fee management.
- * 
- * @author Bank Management System
- * @version 1.0
- */
-public class CurrentAccount extends Account{
-    
-    protected double overdraftLimit;
-    protected double overdraftFee;
+import java.util.List;
 
+/** Current account with an overdraft limit and optional overdraft fee. */
+public class CurrentAccount extends Account {
+    private final double overdraftLimit;
+    private final double overdraftFee;
+
+    /** Original constructor signature retained for compatibility. */
     public CurrentAccount(Customer customer, double overdraftLimit, double overdraftFee) {
         super("Current", customer);
-        if (overdraftLimit < 0) {
-            throw new IllegalArgumentException("Overdraft limit cannot be negative.");
-        }
-        if (overdraftFee < 0) {
-            throw new IllegalArgumentException("Overdraft fee cannot be negative.");
-        }
+        validateNonNegative(overdraftLimit, "Overdraft limit cannot be negative.");
+        validateNonNegative(overdraftFee, "Overdraft fee cannot be negative.");
         this.overdraftLimit = overdraftLimit;
         this.overdraftFee = overdraftFee;
     }
 
-    /**
-     * Validates that the account balance does not exceed the overdraft limit.
-     * 
-     * @throws IllegalArgumentException if balance exceeds overdraft limit
-     */
-    @Override
-    public void specificFunctionality(){
-        if (balance < -overdraftLimit){
-            throw new IllegalArgumentException("Exceeds overdraft limit.");
+    /** Convenience constructor for opening an account with an initial balance. */
+    public CurrentAccount(Customer customer, double openingBalance,
+                          double overdraftLimit, double overdraftFee) {
+        this(customer, overdraftLimit, overdraftFee);
+        setBalance(openingBalance);
+        if (openingBalance < -overdraftLimit) {
+            throw new IllegalArgumentException("Opening balance exceeds overdraft limit.");
         }
     }
 
-    /**
-     * Withdraws the specified amount from the current account.
-     * Allows withdrawals up to the overdraft limit.
-     * 
-     * @param amount the amount to withdraw (must be greater than zero)
-     * @return true if withdrawal was successful
-     * @throws IllegalArgumentException if amount is invalid or exceeds overdraft limit
-     */
+    public double getOverdraftLimit() { return overdraftLimit; }
+    public double getOverdraftFee() { return overdraftFee; }
+
+    @Override
+    protected void validateWithdrawal(double amount) {
+        validatePositiveAmount(amount, "Withdrawal amount must be greater than zero.");
+        if (balance - amount < -overdraftLimit) {
+            throw new IllegalArgumentException("Insufficient balance: overdraft limit exceeded.");
+        }
+    }
+
     @Override
     public boolean withdraw(double amount) {
-        if (amount <= 0) {
-            throw new IllegalArgumentException("Withdrawal amount must be greater than zero.");
-        }
-        if (balance - amount < -overdraftLimit) {
-            throw new IllegalArgumentException("Insufficient balance.");
-        }
+        validateWithdrawal(amount);
         balance -= amount;
         return true;
     }
 
-    /**
-     * Applies overdraft fee if account balance is negative.
-     * Ensures fee application does not exceed overdraft limit.
-     */
-    public void applyOverdraftFee(){
-        if (balance < 0) {
-            double feeToApply = overdraftFee;
-            double potentialNewBalance = balance - feeToApply;
-            if (potentialNewBalance < -overdraftLimit) {
-                feeToApply = Math.abs(balance + overdraftLimit);
-            }
-            balance -= feeToApply;
+    @Override
+    public void specificFunctionality() {
+        if (balance < -overdraftLimit) {
+            throw new IllegalArgumentException("Exceeds overdraft limit.");
         }
     }
 
-    @Override
-    public String toString() {
-        return super.toString() + "\n" +
-            "Overdraft Limit: " + overdraftLimit + "\n" +
-            "Overdraft Fee: " + overdraftFee;
+    public void applyOverdraftFee() {
+        if (balance >= 0.0 || overdraftFee == 0.0) return;
+        double fee = Math.min(overdraftFee, balance + overdraftLimit);
+        if (fee > 0.0) balance -= fee;
     }
 
     @Override
     public String toCSV() {
-        return String.join(",", super.toCSV(), Double.toString(overdraftLimit), Double.toString(overdraftFee));
+        return CsvSupport.encode(accountNumber, Double.toString(balance), accountType,
+                customer.getCustomerID(), Double.toString(overdraftLimit),
+                Double.toString(overdraftFee));
     }
+
     public static CurrentAccount fromCSV(String csv, Customer customer) {
-        String[] values = csv.split(",");
-        if (values.length < 6) { // Ensure there are enough values
-            throw new IllegalArgumentException("Invalid CSV data for CurrentAccount.");
-        }
-        
-        String accountNumber = values[0];
-        double balance = Double.parseDouble(values[1]);
-        double overdraftLimit = Double.parseDouble(values[4]); // Correct index for overdraftLimit
-        double overdraftFee = Double.parseDouble(values[5]); // Correct index for overdraftFee
-        
-        CurrentAccount account = new CurrentAccount(customer, overdraftLimit, overdraftFee);
-        account.setAccountNumber(accountNumber);
+        List<String> values = CsvSupport.decode(csv);
+        if (values.size() < 6) throw new IllegalArgumentException("Invalid CSV data for CurrentAccount.");
+        double balance = Double.parseDouble(values.get(1));
+        double limit = Double.parseDouble(values.get(4));
+        double fee = Double.parseDouble(values.get(5));
+        if (!Double.isFinite(balance)) throw new IllegalArgumentException("Invalid balance.");
+        CurrentAccount account = new CurrentAccount(customer, limit, fee);
+        account.setAccountNumber(values.get(0));
         account.setBalance(balance);
+        account.specificFunctionality();
         return account;
     }
-    
+
+    @Override
+    public String toString() {
+        return super.toString() + System.lineSeparator()
+                + "Overdraft Limit: " + overdraftLimit + System.lineSeparator()
+                + "Overdraft Fee: " + overdraftFee;
+    }
 }

@@ -1,0 +1,19 @@
+
+# Compiled Java files
+bin/
+out/
+target/
+*.class
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# Runtime banking data
+accounts.csv
+customers.csv
+transactions.csv
+
+# Logs
+*.log

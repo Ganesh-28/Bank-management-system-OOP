@@ -1,110 +1,67 @@
+import java.util.Objects;
 
-/**
- * Represents an Automated Teller Machine (ATM) with self-service banking capabilities.
- * Manages cash availability and provides deposit, withdrawal, and transfer services.
- * 
- * @author Bank Management System
- * @version 1.0
- */
+/** ATM service with a cash balance and transaction logging. */
 public class ATM {
-    private String atmID;
-    private String location;
+    private final String atmID;
+    private final String location;
     private double cashAvailable;
 
     public ATM(String atmID, String location, double cashAvailable) {
-        validateInput(atmID, "ATM ID cannot be empty.");
-        validateInput(location, "Location cannot be empty.");
-        if (cashAvailable < 0) {
-            throw new IllegalArgumentException("Cash available cannot be negative.");
-        }
-        
-        this.atmID = atmID;
-        this.location = location;
+        this.atmID = requireText(atmID, "ATM ID cannot be empty.");
+        this.location = requireText(location, "Location cannot be empty.");
+        validateNonNegative(cashAvailable, "Cash available cannot be negative.");
         this.cashAvailable = cashAvailable;
     }
 
-    /**
-     * Processes a withdrawal from the specified account through the ATM.
-     * Validates cash availability and logs the transaction.
-     * 
-     * @param account the account to withdraw from
-     * @param amount the amount to withdraw
-     * @throws IllegalArgumentException if amount is invalid or ATM lacks sufficient cash
-     */
-    public void withdraw(Account account, double amount) {
-        validateAmount(amount, "Amount must be positive.");
-        if (amount > cashAvailable) {
-            throw new IllegalArgumentException("ATM does not have enough cash.");
-        }
-        if (account.withdraw(amount)) {
-            cashAvailable -= amount;
-            logTransaction(account, amount, "Withdrawal");
-            System.out.println("Withdrawal successful. Amount: " + amount);
-        }
+    public synchronized void withdraw(Account account, double amount) {
+        Objects.requireNonNull(account, "Account cannot be null.");
+        Account.validatePositiveAmount(amount, "Amount must be positive.");
+        if (amount > cashAvailable) throw new IllegalArgumentException("ATM does not have enough cash.");
+        account.withdraw(amount);
+        cashAvailable -= amount;
+        logTransaction(account, amount, "Withdrawal");
     }
 
-    /**
-     * Processes a deposit to the specified account through the ATM.
-     * Updates ATM cash availability and logs the transaction.
-     * 
-     * @param account the account to deposit to
-     * @param amount the amount to deposit
-     * @throws IllegalArgumentException if amount is invalid
-     */
-    public void deposit(Account account, double amount) {
-        validateAmount(amount, "Amount must be positive.");
+    public synchronized void deposit(Account account, double amount) {
+        Objects.requireNonNull(account, "Account cannot be null.");
+        Account.validatePositiveAmount(amount, "Amount must be positive.");
         account.deposit(amount);
         cashAvailable += amount;
         logTransaction(account, amount, "Deposit");
-        System.out.println("Deposit successful. Amount: " + amount);
     }
 
     public void transfer(Account sourceAccount, Account targetAccount, double amount) {
-        validateAmount(amount, "Amount must be positive.");
-        if (sourceAccount.withdraw(amount)) {
-            targetAccount.deposit(amount);
-            logTransaction(sourceAccount, amount, "Transfer");
-            System.out.println("Transfer successful. Amount: " + amount);
-        }
+        Objects.requireNonNull(sourceAccount, "Source account cannot be null.");
+        sourceAccount.transfer(targetAccount, amount);
+        logTransaction(sourceAccount, amount, "Transfer");
     }
 
-    public void replenishCash(double amount) {
-        validateAmount(amount, "Amount must be positive.");
+    public synchronized void replenishCash(double amount) {
+        Account.validatePositiveAmount(amount, "Amount must be positive.");
+        if (!Double.isFinite(cashAvailable + amount)) throw new IllegalArgumentException("ATM cash limit exceeded.");
         cashAvailable += amount;
-        System.out.println("ATM cash replenished. Amount: " + amount);
     }
 
-    public double getCashAvailable() {
-        return cashAvailable;
+    public double getCashAvailable() { return cashAvailable; }
+    public double checkBalance(Account account) { return Objects.requireNonNull(account).getBalance(); }
+
+    private void logTransaction(Account account, double amount, String type) {
+        TransactionLogger.log(new Transaction(account.getCustomer().getCustomerID(),
+                account.getAccountNumber(), type, amount));
     }
 
-    public double checkBalance(Account account) {
-        return account.getBalance();
+    private static String requireText(String value, String message) {
+        if (value == null || value.isBlank()) throw new IllegalArgumentException(message);
+        return value.trim();
+    }
+    private static void validateNonNegative(double value, String message) {
+        if (!Double.isFinite(value) || value < 0.0) throw new IllegalArgumentException(message);
     }
 
     @Override
     public String toString() {
-        return "ATM ID: " + atmID + "\n" +
-            "Location: " + location + "\n" +
-            "Cash Available: " + cashAvailable;
-    }
-
-    private void logTransaction(Account account, double amount, String type) {
-        String customerID = account.getCustomer().getCustomerID();
-        String accountNumber = account.getAccountNumber();
-        Transaction transaction = new Transaction(customerID, accountNumber, type, amount);
-        TransactionLogger.log(transaction);
-    }
-
-    private void validateInput(String input, String errorMessage) {
-        if (input == null || input.trim().isEmpty()) {
-            throw new IllegalArgumentException(errorMessage);
-        }
-    }
-
-    private void validateAmount(double amount, String errorMessage) {
-        if (amount <= 0) {
-            throw new IllegalArgumentException(errorMessage);
-        }
+        return "ATM ID: " + atmID + System.lineSeparator()
+                + "Location: " + location + System.lineSeparator()
+                + "Cash Available: " + cashAvailable;
     }
 }

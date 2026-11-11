@@ -1,124 +1,64 @@
-/**
- * Represents a bank teller who assists customers with banking operations.
- * Provides deposit, withdrawal, and transfer assistance with transaction logging.
- * 
- * @author Bank Management System
- * @version 1.0
- */
-public class Teller {
+import java.util.Objects;
 
-    private String tellerID;
-    private String name;
-    private String branchID;
+/** Bank teller who performs assisted banking operations. */
+public class Teller {
+    private final String tellerID;
+    private final String name;
+    private final String branchID;
 
     public Teller(String tellerID, String name, String branchID) {
-        validateInput(tellerID,"Teller ID can not be empty");
-        validateInput(name,"Name can not be empty");
-        validateInput(branchID,"Branch ID can not be empty");
-        
-        this.tellerID = tellerID;
-        this.name = name;
-        this.branchID = branchID;
+        this.tellerID = requireText(tellerID, "Teller ID cannot be empty.");
+        this.name = requireText(name, "Name cannot be empty.");
+        this.branchID = requireText(branchID, "Branch ID cannot be empty.");
     }
 
-    public String getTellerID() {
-        return tellerID;
-    }
-    public String getName() {
-        return name;
-    }
-    public String getBranchID() {
-        return branchID;
+    public String getTellerID() { return tellerID; }
+    public String getName() { return name; }
+    public String getBranchID() { return branchID; }
+
+    public void assistDeposit(Customer customer, Account account, double amount) {
+        validateCustomerAccount(customer, account);
+        account.deposit(amount);
+        logTransaction(customer, account, amount, "Deposit");
     }
 
-    /**
-     * Assists a customer with depositing funds into their account.
-     * Validates input and logs the transaction upon success.
-     * 
-     * @param customer the customer making the deposit
-     * @param account the account to deposit to
-     * @param amount the amount to deposit
-     * @throws IllegalArgumentException if customer, account is null, or amount is invalid
-     */
-    public void assistDeposit(Customer customer, Account account, double amount){
-        if (customer==null || account==null ) {
-            throw new IllegalArgumentException("Customer or Account cannot be null");   
-        }
-        if (amount <= 0) {
-            throw new IllegalArgumentException("Amount must be positive");
-        }
-        boolean success = account.deposit(amount);
-        if (success) {
-            logTransaction(customer, account, amount, "Deposit");
-        }
-    }
-
-
-    /**
-     * Assists a customer with withdrawing funds from their account.
-     * Validates balance and logs the transaction upon success.
-     * 
-     * @param customer the customer making the withdrawal
-     * @param account the account to withdraw from
-     * @param amount the amount to withdraw
-     * @throws IllegalArgumentException if customer, account is null, amount is invalid, or balance is insufficient
-     */
     public void assistWithdrawal(Customer customer, Account account, double amount) {
-        if (customer == null || account == null) {
-            throw new IllegalArgumentException("Customer or account cannot be null.");
-        }
-        if (amount <= 0) {
-            throw new IllegalArgumentException("Amount must be positive.");
-        }
-        if (amount > account.getBalance()) {
-            throw new IllegalArgumentException("Insufficient balance.");
-        }
-        boolean success = account.withdraw(amount);
-        if (success) {
-            logTransaction(customer, account, amount, "Withdrawal");
-        }
+        validateCustomerAccount(customer, account);
+        account.withdraw(amount);
+        logTransaction(customer, account, amount, "Withdrawal");
     }
 
-    public void assistTransfer(Customer customer, Account sourceAccount, Account targetAccount, double amount) {
-        if (customer == null || sourceAccount == null || targetAccount == null) {
-            throw new IllegalArgumentException("Customer, source account, or target account cannot be null.");
-        }
-        if (amount <= 0) {
-            throw new IllegalArgumentException("Amount must be positive.");
-        }
-        if (amount > sourceAccount.getBalance()) {
-            throw new IllegalArgumentException("Insufficient balance.");
-        }
-        boolean success = sourceAccount.transfer(targetAccount, amount);
-        if (success) {
-            logTransaction(customer, sourceAccount, amount, "Transfer");
-        }
+    public void assistTransfer(Customer customer, Account source, Account target, double amount) {
+        validateCustomerAccount(customer, source);
+        Objects.requireNonNull(target, "Target account cannot be null.");
+        source.transfer(target, amount);
+        logTransaction(customer, source, amount, "Transfer");
     }
 
     public void provideAccountDetails(Customer customer) {
-        if (customer == null) {
-            throw new IllegalArgumentException("Customer cannot be null.");
+        System.out.println(Objects.requireNonNull(customer, "Customer cannot be null."));
+    }
+
+    private void validateCustomerAccount(Customer customer, Account account) {
+        Objects.requireNonNull(customer, "Customer cannot be null.");
+        Objects.requireNonNull(account, "Account cannot be null.");
+        if (!customer.getCustomerID().equals(account.getCustomer().getCustomerID())) {
+            throw new IllegalArgumentException("Account does not belong to the specified customer.");
         }
-        System.out.println(customer);
     }
 
     private void logTransaction(Customer customer, Account account, double amount, String type) {
-        Transaction transaction = new Transaction(customer.getCustomerID(), account.getAccountNumber(), type, amount);
-        TransactionLogger.log(transaction);
+        TransactionLogger.log(new Transaction(customer.getCustomerID(), account.getAccountNumber(), type, amount));
     }
 
-    private void validateInput(String input, String errorMessage) {
-        if (input == null || input.trim().isEmpty()) {
-            throw new IllegalArgumentException(errorMessage);
-        }
+    private static String requireText(String value, String message) {
+        if (value == null || value.isBlank()) throw new IllegalArgumentException(message);
+        return value.trim();
     }
 
     @Override
     public String toString() {
-        return "Teller{" +
-                "tellerID='" + tellerID + '\n' +
-                ", name='" + name + '\n' +
-                ", branchID='" + branchID  +
-                '}';
+        return "Teller{" + "tellerID='" + tellerID + '\''
+                + ", name='" + name + '\'' + ", branchID='" + branchID + '\'' + '}';
     }
-}    
+}

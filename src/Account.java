@@ -1,161 +1,131 @@
+import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Abstract base class representing a bank account.
- * Provides common functionality for all account types including deposits, withdrawals, and transfers.
- * Subclasses must implement specific account-type functionality.
- * 
- * @author Bank Management System
- * @version 1.0
+ * Base class for bank accounts.
+ *
+ * Monetary values remain {@code double} to retain compatibility with the
+ * original project's public API. For a production banking system, use
+ * BigDecimal and a persistent database instead.
  */
 public abstract class Account {
     protected String accountNumber;
     protected double balance;
-    protected String accountType;
-    protected Customer customer;
+    protected final String accountType;
+    protected final Customer customer;
 
-    public Account(String accountType, Customer customer) {
-        validateInput(accountType, "Account type cannot be empty.");
-        validateCustomer(customer);
-
+    protected Account(String accountType, Customer customer) {
+        this.accountType = requireText(accountType, "Account type cannot be empty.");
+        this.customer = Objects.requireNonNull(customer, "Customer cannot be null.");
         this.accountNumber = UUID.randomUUID().toString();
-        this.accountType = accountType;
-        this.customer = customer;
-        this.balance = 0;
+        this.balance = 0.0;
     }
 
-    public String getAccountNumber() {
-        return accountNumber;
-    }
+    public String getAccountNumber() { return accountNumber; }
+    public String getAccountType() { return accountType; }
+    public double getBalance() { return balance; }
+    public Customer getCustomer() { return customer; }
 
-    public String getAccountType() {
-        return accountType;
-    }
-
-    public double getBalance() {
-        return balance;
-    }
-
-    public Customer getCustomer() {
-        return customer;
-    }
-
-    /**
-     * Deposits the specified amount into this account.
-     * 
-     * @param amount the amount to deposit (must be greater than zero)
-     * @return true if deposit was successful
-     * @throws IllegalArgumentException if amount is less than or equal to zero
-     */
     public boolean deposit(double amount) {
-        validateAmount(amount, "Deposit amount must be greater than zero.");
+        validatePositiveAmount(amount, "Deposit amount must be greater than zero.");
         balance += amount;
-        return true; 
+        return true;
     }
 
-    /**
-     * Withdraws the specified amount from this account.
-     * 
-     * @param amount the amount to withdraw (must be greater than zero)
-     * @return true if withdrawal was successful
-     * @throws IllegalArgumentException if amount is less than or equal to zero or if balance is insufficient
-     */
     public boolean withdraw(double amount) {
-        validateAmount(amount, "Withdrawal amount must be greater than zero.");
-        if (balance < amount) {
+        validatePositiveAmount(amount, "Withdrawal amount must be greater than zero.");
+        if (amount > balance) {
             throw new IllegalArgumentException("Insufficient balance.");
         }
         balance -= amount;
-        return true; // Withdrawal successful
+        return true;
     }
 
     /**
-     * Transfers the specified amount from this account to the target account.
-     * 
-     * @param targetAccount the account to transfer funds to (cannot be null)
-     * @param amount the amount to transfer (must be greater than zero)
-     * @return true if transfer was successful
-     * @throws IllegalArgumentException if amount is invalid, target account is null, or balance is insufficient
+     * Transfers funds atomically with respect to validation: all validations
+     * are performed before either balance is changed.
      */
     public boolean transfer(Account targetAccount, double amount) {
-        validateAmount(amount, "Transfer amount must be greater than zero.");
-        if (targetAccount == null) {
-            throw new IllegalArgumentException("Target account cannot be null.");
+        Objects.requireNonNull(targetAccount, "Target account cannot be null.");
+        validatePositiveAmount(amount, "Transfer amount must be greater than zero.");
+        if (targetAccount == this) {
+            throw new IllegalArgumentException("Source and target accounts must be different.");
         }
-        withdraw(amount);
-        boolean depositSuccess = targetAccount.deposit(amount);
-        return depositSuccess;
+        validateWithdrawal(amount);
+        targetAccount.validateDeposit(amount);
+        balance -= amount;
+        targetAccount.balance += amount;
+        return true;
     }
 
-    private void validateInput(String input, String errorMessage) {
-        if (input == null || input.trim().isEmpty()) {
-            throw new IllegalArgumentException(errorMessage);
+    protected void validateWithdrawal(double amount) {
+        validatePositiveAmount(amount, "Withdrawal amount must be greater than zero.");
+        if (amount > balance) {
+            throw new IllegalArgumentException("Insufficient balance.");
         }
     }
 
-    private void validateAmount(double amount, String errorMessage) {
-        if (amount <= 0) {
-            throw new IllegalArgumentException(errorMessage);
+    protected void validateDeposit(double amount) {
+        validatePositiveAmount(amount, "Deposit amount must be greater than zero.");
+        if (!Double.isFinite(balance + amount)) {
+            throw new IllegalArgumentException("Resulting balance is outside the supported range.");
         }
     }
 
-    private void validateCustomer(Customer customer) {
-        if (customer == null) {
-            throw new IllegalArgumentException("Customer cannot be null.");
+    protected static void validatePositiveAmount(double amount, String message) {
+        if (!Double.isFinite(amount) || amount <= 0.0) {
+            throw new IllegalArgumentException(message);
         }
+    }
+
+    protected static void validateNonNegative(double amount, String message) {
+        if (!Double.isFinite(amount) || amount < 0.0) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    protected static String requireText(String value, String message) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(message);
+        }
+        return value.trim();
     }
 
     protected void setAccountNumber(String accountNumber) {
-        this.accountNumber = accountNumber;
+        this.accountNumber = requireText(accountNumber, "Account number cannot be empty.");
     }
 
     protected void setBalance(double balance) {
+        if (!Double.isFinite(balance)) {
+            throw new IllegalArgumentException("Balance must be a finite number.");
+        }
         this.balance = balance;
     }
 
-    /**
-     * Executes account-type specific functionality.
-     * Must be implemented by subclasses to define unique account behaviors.
-     */
     public abstract void specificFunctionality();
-    /**
-     * Converts this account to CSV format for persistence.
-     * 
-     * @return comma-separated string representation of the account
-     */
+
     public String toCSV() {
-        return String.join(",", accountNumber, Double.toString(balance), accountType, customer.getCustomerID());
+        return CsvSupport.encode(accountNumber, Double.toString(balance), accountType,
+                customer.getCustomerID());
     }
-    /**
-     * Creates an Account object from CSV data.
-     * Determines account type and delegates to appropriate subclass factory method.
-     * 
-     * @param csv comma-separated account data
-     * @param customer the customer who owns this account
-     * @return Account object (SavingsAccount or CurrentAccount)
-     * @throws IllegalArgumentException if CSV data is invalid or account type is unknown
-     */
+
     public static Account fromCSV(String csv, Customer customer) {
-        String[] values = csv.split(",");
-        if (values.length < 4) {
+        var values = CsvSupport.decode(csv);
+        if (values.size() < 4) {
             throw new IllegalArgumentException("Invalid CSV data for Account.");
         }
-        String accountType = values[2];
-    
-        switch (accountType) {
-            case "Savings":
-                return SavingsAccount.fromCSV(csv, customer);
-            case "Current":
-                return CurrentAccount.fromCSV(csv, customer);
-            default:
-                throw new IllegalArgumentException("Unknown account type: " + accountType);
-        }
+        return switch (values.get(2)) {
+            case "Savings" -> SavingsAccount.fromCSV(csv, customer);
+            case "Current" -> CurrentAccount.fromCSV(csv, customer);
+            default -> throw new IllegalArgumentException("Unknown account type: " + values.get(2));
+        };
     }
+
     @Override
     public String toString() {
-        return "Account Number: " + accountNumber + "\n" +
-            "Account Type: " + accountType + "\n" +
-            "Balance: " + balance + "\n" +
-            "Customer: " + customer.getName();
+        return "Account Number: " + accountNumber + System.lineSeparator()
+                + "Account Type: " + accountType + System.lineSeparator()
+                + "Balance: " + String.format(java.util.Locale.ROOT, "%.2f", balance)
+                + System.lineSeparator() + "Customer: " + customer.getName();
     }
 }
